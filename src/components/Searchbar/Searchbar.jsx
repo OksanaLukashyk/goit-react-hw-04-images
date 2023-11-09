@@ -1,22 +1,21 @@
-import React, { Component } from 'react'
+import React, { useState } from 'react'
 import { ImSearch } from 'react-icons/im';
 import { Notify } from 'notiflix'
 import css from './Searchbar.module.css';
 
-export class Searchbar extends Component {
-  state = {
-    searchQuery: "",
+export const Searchbar = ({onSubmit}) => {
+
+  const [searchQuery, setSearchquery] = useState("");
+
+
+  const handleChange = (evt) => {
+    setSearchquery(evt.target.value)
   }
 
-
-  handleChange = (evt) => {
-    this.setState({ searchQuery: evt.target.value})
-  }
-
-  handleSubmit = (evt) => {
+  const handleSubmit = (evt) => {
     evt.preventDefault();
 
-    if (this.state.searchQuery.trim()==="") {
+    if (searchQuery.trim()==="") {
       Notify.warning("Please enter a valid search query", {
         clickToClose: true,
         timeout: 3000,
@@ -25,15 +24,14 @@ export class Searchbar extends Component {
       return;
     }
 
-    this.props.onSubmit(this.state.searchQuery);
-    this.setState({ searchQuery: "" });
+    onSubmit(searchQuery);
+    setSearchquery("");
     evt.target.reset();
   }
   
-  render() {
-    return (
+  return (
       <header className={css.searchbar}>
-        <form className={css.form} onSubmit={this.handleSubmit}>
+        <form className={css.form} onSubmit={handleSubmit}>
           <button type="submit" className={css.button}>
             {/* <span className={css.buttonLabel}>Search</span> */}
             <ImSearch color="white" size="18" />
@@ -46,12 +44,11 @@ export class Searchbar extends Component {
             autoFocus
             placeholder="Search images and photos"
             name="searchQuery"
-            value={this.state.searchQuery}
-            onChange={this.handleChange}
+            value={searchQuery}
+            onChange={handleChange}
             required
           />
         </form>
       </header>
-    );
-  };
+  );
 }

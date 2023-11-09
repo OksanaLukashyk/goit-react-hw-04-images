@@ -1,4 +1,4 @@
-import React, { Component } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Notify } from 'notiflix';
 import { fetchPhotos } from 'services/PixabayApi';
 import { Searchbar } from './Searchbar/Searchbar';
@@ -7,84 +7,84 @@ import { Loader } from './Loader/Loader';
 import { Button } from './Button/Button';
 import { Modal } from './Modal/Modal';
 
-export class App extends Component {
+export const App = () => {
 
-  state = {
-    images: [],
-    isLoading: false,
-    error: null,
-    query: ``,
-    page: 1,
-    perPage: 12,
-    isloadMoreShown: false,
-    isModalShown: false,
-    modalImage: null,
-    imgsData: null,
-  }
+  const [images, setImages] = useState([]);
+  const [isLoading, setIsloading] = useState(false);
+  const [error, setError] = useState(null);
+  const [query, setQuery] = useState(``);
+  const [page, setPage] = useState(1);
+  const perPage = 12;
+  const [isLoadMoreShown, setIsloadmoreshown] = useState(false);
+  const [isModalShown, setIsmodalshown] = useState(false);
+  const [modalImage, setModalimage] = useState(null);
+  // const [imgsData, setImgsdata] = useState(null);
+  
 
-  async componentDidUpdate(_, prevState) {
-    const { query, page, perPage } = this.state;
-
-    if (page !== prevState.page || query !== prevState.query) {
+  useEffect(() => {
+    const fetchImages = async () => {
       try {
-        this.setState({ isLoading: true, error: null });
+        setIsloading(true);
+        // setError(null);  
         const data = await fetchPhotos(query, page);
         if (data.hits.length === 0) {
-          this.setState({ isLoading: false, isloadMoreShown: false});
+          // setError(error.message);
+          setIsloading(false);
+          setIsloadmoreshown(false);
           return Notify.failure('Sorry, no results found. Please try again with some another keywords', { timeout: 3000, });
         }
 
-        this.setState(prevState => ({ images: [...prevState.images, ...data.hits], isloadMoreShown: page < Math.ceil(data.totalHits / perPage) }));
+        setImages(prevState => [...prevState, ...data.hits]);
+        setIsloadmoreshown(page < Math.ceil(data.totalHits / perPage));
         
-        if (page === Math.ceil(data.totalHits / perPage)) { 
-          this.setState({ isloadMoreShown: false});
+        if (page === Math.ceil(data.totalHits / perPage)) {
+          setIsloadmoreshown(false);
           return Notify.warning(
             `You've reached the end of search results. Total number of images - ${data.totalHits} `, { timeout: 3000, });
         }
         
       } catch (error) {
-         this.setState({ error: error.message });
+        setError(error.message);
       }
       finally {
-        this.setState({ isLoading: false });
+        setIsloading(false);
       }
     }
+
+    if (query !== '' || page !== 1) {
+      fetchImages();
+    }
+
+  }, [page, query, perPage, error]);
+
+  const handleSearch = (query) => { 
+    setImages([]);
+    setQuery(query);
+    setPage(1);
   }
 
-  handleSearch = (query) => { 
-    this.setState({ images: [], query:query, page:1 });
+  const handleLoadMore = () => {
+    setPage(page + 1)
   }
 
-  handleLoadMore = () => {
-    this.setState(prevState => ({ page: prevState.page + 1 }));
+  const openModal = (imgData) => {
+    setIsmodalshown(true);
+    setModalimage(imgData);
   }
 
-  openModal = (imgData) => {
-    this.setState({
-      isModalShown: true,
-      modalImage: imgData,
-    });
+  const closeModal = () => {
+    setIsmodalshown(false);
+    setModalimage(null);
   }
-
-  closeModal = () => {
-    this.setState({
-      isModalShown: false,
-      modalImage: null,
-    });
-  }
-
-  render() {
-    const { images, isLoading, error, isModalShown, isloadMoreShown, modalImage } = this.state;
-    
-    return (
+  
+  return (
       <div className="app">
-        <Searchbar onSubmit={this.handleSearch} />
+        <Searchbar onSubmit={handleSearch} />
         {error !== null && Notify.failure(`Oops, some error occured... Please try reloading the page`, { timeout: 6000, })}
         {isLoading && <Loader />}
-        {images.length !== 0 && <ImageGallery images = {images} openModal={this.openModal} />}
-        {isloadMoreShown && <Button onClick={this.handleLoadMore} />}
-        {isModalShown && <Modal closeModal={this.closeModal} imgData={modalImage} /> }
+        {images.length !== 0 && <ImageGallery images = {images} openModal={openModal} />}
+        {isLoadMoreShown && <Button onClick={handleLoadMore} />}
+        {isModalShown && <Modal closeModal={closeModal} imgData={modalImage} /> }
       </div>
-    )
-  }
+  )
 }
